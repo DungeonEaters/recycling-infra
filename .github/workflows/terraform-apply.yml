@@ -1,0 +1,73 @@
+name: Terraform apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type APPLY to create or change Oracle Cloud resources
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-production-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Apply Oracle production
+    if: github.ref == 'refs/heads/main' && inputs.confirm == 'APPLY'
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: environments/production
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.OCI_STATE_S3_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OCI_STATE_S3_SECRET_KEY }}
+      TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+      TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+      TF_VAR_api_key_fingerprint: ${{ secrets.OCI_API_KEY_FINGERPRINT }}
+      TF_VAR_api_private_key: ${{ secrets.OCI_API_PRIVATE_KEY }}
+      TF_VAR_region: ${{ vars.OCI_REGION }}
+      TF_VAR_compartment_ocid: ${{ vars.OCI_COMPARTMENT_OCID }}
+      TF_VAR_availability_domain: ${{ vars.OCI_AVAILABILITY_DOMAIN }}
+      TF_VAR_ubuntu_image_ocid: ${{ vars.OCI_UBUNTU_IMAGE_OCID }}
+      TF_VAR_ssh_public_key: ${{ vars.DEPLOY_SSH_PUBLIC_KEY }}
+      TF_VAR_admin_cidrs: ${{ vars.ADMIN_CIDRS }}
+      OCI_STATE_BUCKET: ${{ vars.OCI_STATE_BUCKET }}
+      OCI_STATE_NAMESPACE: ${{ vars.OCI_STATE_NAMESPACE }}
+      OCI_REGION: ${{ vars.OCI_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+          terraform_wrapper: false
+      - name: Validate state backend settings
+        run: |
+          test -n "$OCI_STATE_BUCKET"
+          test -n "$OCI_STATE_NAMESPACE"
+          test -n "$OCI_REGION"
+          test -n "$AWS_ACCESS_KEY_ID"
+          test -n "$AWS_SECRET_ACCESS_KEY"
+      - name: Initialize OCI Object Storage state
+        run: |
+          terraform init \
+            -backend-config="bucket=$OCI_STATE_BUCKET" \
+            -backend-config="key=production/terraform.tfstate" \
+            -backend-config="region=$OCI_REGION" \
+            -backend-config="endpoint=https://$OCI_STATE_NAMESPACE.compat.objectstorage.$OCI_REGION.oraclecloud.com" \
+            -backend-config="skip_credentials_validation=true" \
+            -backend-config="skip_region_validation=true" \
+            -backend-config="skip_requesting_account_id=true" \
+            -backend-config="skip_metadata_api_check=true" \
+            -backend-config="use_path_style=true"
+      - name: Plan exact apply
+        run: terraform plan -out=tfplan
+      - name: Apply approved plan
+        run: terraform apply -auto-approve tfplan
+      - name: Outputs
+        run: terraform output

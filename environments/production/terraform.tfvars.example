@@ -1,0 +1,15 @@
+# Obtain OCIDs and image OCID for your region from Oracle Cloud Console.
+tenancy_ocid        = "ocid1.tenancy.oc1..replace-me"
+user_ocid           = "ocid1.user.oc1..replace-me"
+api_key_fingerprint = "aa:bb:cc:dd:ee:ff"
+api_private_key     = <<-EOT
+-----BEGIN PRIVATE KEY-----
+replace-me
+-----END PRIVATE KEY-----
+EOT
+region              = "sa-santiago-1"
+compartment_ocid    = "ocid1.compartment.oc1..replace-me"
+availability_domain = "replace-with-exact-ad-name"
+ubuntu_image_ocid   = "ocid1.image.oc1.sa-santiago-1.replace-me"
+ssh_public_key      = "ssh-ed25519 AAAA... deployment@recycling-logistics"
+admin_cidrs         = ["203.0.113.10/32"]
