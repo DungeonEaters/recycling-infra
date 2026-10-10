@@ -1,0 +1,36 @@
+{
+  "name": "recycling-platform",
+  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.yml"],
+  "service": "workspace",
+  "workspaceFolder": "/workspaces/recycling-infra",
+  // Node 22 matches CI (Vite 8 needs >= 20.19 / 22.12).
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+  },
+  "shutdownAction": "stopCompose",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "forwardPorts": [8000, 5173, 5174],
+  "portsAttributes": {
+    "8000": { "label": "API (FastAPI)" },
+    "5173": { "label": "Panel admin (web)" },
+    "5174": { "label": "App choferes (mobile)" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/workspaces/recycling-backend/.venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"],
+        "python.testing.cwd": "/workspaces/recycling-backend"
+      }
+    }
+  }
+}

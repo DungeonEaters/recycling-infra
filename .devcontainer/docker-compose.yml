@@ -1,0 +1,20 @@
+# Dev environment: adds an IDE workspace to the root application compose stack.
+services:
+  workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: sleep infinity
+    volumes:
+      - ../..:/workspaces:cached
+      # Keep Linux-built deps out of the host checkout (native binaries differ from macOS).
+      - backend-venv:/workspaces/recycling-backend/.venv
+    environment:
+      DATABASE_URL: postgresql+psycopg://recycling:recycling@db:5432/recycling
+      TZ: America/Santiago
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  backend-venv:
