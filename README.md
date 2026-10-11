@@ -72,3 +72,23 @@ Configure Environment variables:
 - `DEPLOY_SSH_PUBLIC_KEY`, `ADMIN_CIDRS`, `OCI_STATE_BUCKET`, `OCI_STATE_NAMESPACE`
 
 No `terraform destroy` workflow exists. Destruction is a separately reviewed break-glass procedure.
+
+## Deploy workflow
+
+`.github/workflows/deploy.yml` is manual only (`workflow_dispatch`). It takes an existing GHCR `image_tag` (produced by the `release.yml` workflow of `recycling-backend`/`recycling-web`/`recycling-mobile`, see [cicd-strategy.md](https://github.com/DungeonEaters/app-design-definitions/blob/main/applications/recycling-logistics/cicd-strategy.md) in the design repo), uploads `docker-compose.prod.yml`/`Caddyfile` over SSH and runs `docker compose pull`/`up -d` on the target VM. It never builds images itself.
+
+Configure a GitHub Environment per target (`test`, `production`) with:
+
+**Secrets:**
+
+- `SSH_PRIVATE_KEY` — dedicated deploy key, see [oracle-credentials-setup.md](https://github.com/DungeonEaters/app-design-definitions/blob/main/applications/recycling-logistics/oracle-credentials-setup.md)
+- `SSH_KNOWN_HOSTS` — output of `ssh-keyscan <SERVER_HOST>`
+- `GHCR_USERNAME`, `GHCR_PULL_TOKEN` — a GitHub user + PAT (`read:packages`) able to pull the three GHCR images on the VM
+
+**Variables:**
+
+- `SERVER_HOST` — VM public IP (from the first `terraform apply`)
+- `SERVER_USER` — `ubuntu`
+- `DEPLOY_PATH` — e.g. `/opt/recycling/production`
+
+The VM's `.env` at `DEPLOY_PATH` must already define `API_IMAGE`, `WEB_IMAGE`, `MOBILE_IMAGE`, `APP_DOMAIN`, `ACME_EMAIL` and the application secrets (see `.env.production.example`); the workflow only updates `IMAGE_TAG` and recreates the selected service(s).
