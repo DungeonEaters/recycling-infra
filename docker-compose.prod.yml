@@ -15,7 +15,7 @@ services:
       retries: 10
 
   api:
-    image: ghcr.io/${IMAGE_REPOSITORY:?IMAGE_REPOSITORY is required}-api:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ${API_IMAGE:?API_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:?POSTGRES_DB is required}
@@ -34,14 +34,14 @@ services:
         condition: service_healthy
 
   web:
-    image: ghcr.io/${IMAGE_REPOSITORY:?IMAGE_REPOSITORY is required}-web:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ${WEB_IMAGE:?WEB_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
 
   mobile:
-    image: ghcr.io/${IMAGE_REPOSITORY:?IMAGE_REPOSITORY is required}-mobile:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ${MOBILE_IMAGE:?MOBILE_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
     restart: unless-stopped
     depends_on:
       api:

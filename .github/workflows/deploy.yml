@@ -1,0 +1,93 @@
+name: Deploy published images
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target GitHub Environment and VM stack
+        required: true
+        type: choice
+        options: [test, production]
+      image_tag:
+        description: Existing GHCR tag, for example test-0.2.0-rc.1 or release-v0.1.0
+        required: true
+        type: string
+      component:
+        description: Component to update
+        required: true
+        type: choice
+        options: [all, api, web, mobile]
+        default: all
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.component }} to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate image tag
+        run: |
+          test "${{ inputs.image_tag }}" = "$(printf '%s' '${{ inputs.image_tag }}' | tr -cd 'A-Za-z0-9._-')"
+          test -n "${{ inputs.image_tag }}"
+      - uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Trust production host key
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Upload deployment manifests
+        env:
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        run: |
+          # shellcheck disable=SC2029
+          ssh "$SERVER_USER@$SERVER_HOST" "mkdir -p '$DEPLOY_PATH'"
+          scp docker-compose.prod.yml Caddyfile "$SERVER_USER@$SERVER_HOST:$DEPLOY_PATH/"
+      - name: Pull images and update service
+        env:
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          COMPONENT: ${{ inputs.component }}
+        run: |
+          # shellcheck disable=SC2029
+          ssh "$SERVER_USER@$SERVER_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' IMAGE_TAG='$IMAGE_TAG' COMPONENT='$COMPONENT' GHCR_USERNAME='$GHCR_USERNAME' GHCR_PULL_TOKEN='$GHCR_PULL_TOKEN' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$DEPLOY_PATH"
+          test -f .env || { echo "Missing $DEPLOY_PATH/.env"; exit 1; }
+          for v in API_IMAGE WEB_IMAGE MOBILE_IMAGE; do
+            grep -q "^${v}=" .env || { echo "$v missing from .env"; exit 1; }
+          done
+
+          if grep -q '^IMAGE_TAG=' .env; then
+            sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$IMAGE_TAG/" .env
+          else
+            printf '\nIMAGE_TAG=%s\n' "$IMAGE_TAG" >> .env
+          fi
+
+          printf '%s' "$GHCR_PULL_TOKEN" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
+          if [ "$COMPONENT" = "all" ]; then
+            docker compose --env-file .env -f docker-compose.prod.yml pull
+            docker compose --env-file .env -f docker-compose.prod.yml up -d --remove-orphans
+          else
+            docker compose --env-file .env -f docker-compose.prod.yml pull "$COMPONENT"
+            docker compose --env-file .env -f docker-compose.prod.yml up -d --no-deps "$COMPONENT"
+          fi
+          docker image prune -f
+          docker compose --env-file .env -f docker-compose.prod.yml ps
+          REMOTE
