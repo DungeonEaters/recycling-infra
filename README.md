@@ -80,13 +80,13 @@ No `terraform destroy` workflow exists. Destruction is a separately reviewed bre
 
 ## Deploy workflow
 
-`.github/workflows/deploy.yml` is manual only (`workflow_dispatch`). It takes an existing GHCR `image_tag` (produced by the `release.yml` workflow of `recycling-backend`/`recycling-web`/`recycling-mobile`, see [cicd-strategy.md](https://github.com/DungeonEaters/app-design-definitions/blob/main/applications/recycling-logistics/cicd-strategy.md) in the design repo), uploads `docker-compose.prod.yml`/`Caddyfile` over SSH and runs `docker compose pull`/`up -d` on the target VM. It never builds images itself.
+`.github/workflows/deploy.yml` is manual only (`workflow_dispatch`). It takes an existing GHCR `image_tag` (produced by the `release.yml` workflow of `recycling-backend`/`recycling-web`/`recycling-mobile`, see [cicd-strategy.md](https://github.com/DungeonEaters/recycling-logistics-design/blob/main/docs/delivery/cicd-strategy.md) in the design repo), uploads `docker-compose.prod.yml`/`Caddyfile` over SSH and runs `docker compose pull`/`up -d` on the target VM. It never builds images itself.
 
 Configure a GitHub Environment per target (`test`, `production`) with:
 
 **Secrets:**
 
-- `SSH_PRIVATE_KEY` — dedicated deploy key, see [oracle-credentials-setup.md](https://github.com/DungeonEaters/app-design-definitions/blob/main/applications/recycling-logistics/oracle-credentials-setup.md)
+- `SSH_PRIVATE_KEY` — dedicated deploy key, see [oracle-credentials-setup.md](https://github.com/DungeonEaters/recycling-logistics-design/blob/main/docs/infrastructure/oracle-credentials-setup.md)
 - `SSH_KNOWN_HOSTS` — output of `ssh-keyscan <SERVER_HOST>`
 - `GHCR_USERNAME`, `GHCR_PULL_TOKEN` — a GitHub user + PAT (`read:packages`) able to pull the three GHCR images on the VM
 
