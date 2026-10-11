@@ -40,6 +40,11 @@ Terraform is in [environments/production/](environments/production/). It provisi
 - Ubuntu `VM.Standard.A1.Flex`, defaulting to 4 OCPUs and 24 GB RAM.
 - Cloud-init for Docker Engine, Docker Compose plugin and UFW.
 
+Architecture and manual OCI bootstrap details:
+
+- [Production infrastructure design](docs/architecture/infrastructure_design.md)
+- [Oracle administrator setup](docs/architecture/oracle_admin_setup.md)
+
 Use the initial local workflow only after filling a private `terraform.tfvars`:
 
 ```bash

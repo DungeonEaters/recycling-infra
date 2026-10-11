@@ -13,3 +13,4 @@ availability_domain = "replace-with-exact-ad-name"
 ubuntu_image_ocid   = "ocid1.image.oc1.sa-santiago-1.replace-me"
 ssh_public_key      = "ssh-ed25519 AAAA... deployment@recycling-logistics"
 admin_cidrs         = ["203.0.113.10/32"]
+boot_volume_size_in_gbs = 100

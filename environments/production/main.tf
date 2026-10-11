@@ -92,8 +92,9 @@ resource "oci_core_instance" "main" {
   }
 
   source_details {
-    source_type = "image"
-    source_id   = var.ubuntu_image_ocid
+    source_type             = "image"
+    source_id               = var.ubuntu_image_ocid
+    boot_volume_size_in_gbs = var.boot_volume_size_in_gbs
   }
 
   metadata = {

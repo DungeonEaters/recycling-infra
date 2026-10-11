@@ -57,6 +57,15 @@ variable "memory_in_gbs" {
     error_message = "Always Free supports 6-24 GB A1 memory."
   }
 }
+variable "boot_volume_size_in_gbs" {
+  type        = number
+  default     = 100
+  description = "Boot volume size for the ARM64 instance, within the Always Free Block Volume allowance."
+  validation {
+    condition     = var.boot_volume_size_in_gbs >= 50
+    error_message = "Boot volume size must be at least 50 GB."
+  }
+}
 variable "vcn_cidr" {
   type    = string
   default = "10.10.0.0/16"
