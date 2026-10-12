@@ -16,6 +16,11 @@ source "$config_file"
 : "${TEST_COMPARTMENT_NAME:?TEST_COMPARTMENT_NAME must be set}"
 
 oci_cmd=(oci --profile "$OCI_CLI_PROFILE")
+command -v oci >/dev/null || {
+  printf 'The OCI CLI is required but was not found in PATH.\n' >&2
+  exit 1
+}
+
 compartment_ocid="$("${oci_cmd[@]}" iam compartment list \
   --compartment-id-in-subtree true \
   --all \
@@ -45,3 +50,19 @@ printf '\nInstances\n'
   --compartment-id "$compartment_ocid" \
   --all \
   --output table
+
+printf '\nInstance VNIC addresses\n'
+vnic_id="$("${oci_cmd[@]}" compute vnic-attachment list \
+  --compartment-id "$compartment_ocid" \
+  --all \
+  --query 'data[0]."vnic-id"' \
+  --raw-output)"
+
+if [[ -z "$vnic_id" || "$vnic_id" == "null" ]]; then
+  printf 'No VNIC attachment exists in this compartment.\n'
+else
+  "${oci_cmd[@]}" network vnic get \
+    --vnic-id "$vnic_id" \
+    --query 'data.{privateIp:"private-ip",publicIp:"public-ip",state:"lifecycle-state"}' \
+    --output table
+fi
