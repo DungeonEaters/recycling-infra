@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - infra/test-bootstrap
-    paths:
-      - "environments/bootstrap/**"
-      - ".github/workflows/bootstrap-test.yml"
 
 permissions:
   contents: read
