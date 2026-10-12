@@ -90,6 +90,7 @@ jobs:
               -backend-config="skip_region_validation=true" \
               -backend-config="skip_requesting_account_id=true" \
               -backend-config="skip_metadata_api_check=true" \
+              -backend-config="skip_s3_checksum=true" \
               -backend-config="use_path_style=true"; then
               exit 0
             fi
@@ -159,6 +160,7 @@ jobs:
             -backend-config="skip_region_validation=true" \
             -backend-config="skip_requesting_account_id=true" \
             -backend-config="skip_metadata_api_check=true" \
+            -backend-config="skip_s3_checksum=true" \
             -backend-config="use_path_style=true"
       - name: Verify recovered state
         run: terraform output
