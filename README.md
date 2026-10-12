@@ -52,9 +52,10 @@ production root can create resources.
 
 ## Test application deployment
 
-The isolated test infrastructure uses a small AMD instance and is intentionally limited
-to PostgreSQL, the API and an HTTP-only Caddy proxy. It validates the provisioning and
-runtime path; it is not sized for the complete application stack.
+The isolated test infrastructure splits its limited Always Free capacity between two AMD
+instances: PostgreSQL, the API and Caddy run on the backend host; Caddy serves the
+compiled web panel from the frontend host. This validates the provisioning and runtime
+path; it is not sized for the complete application stack.
 
 The test deployment is initiated from an administrator workstation already allowed by
 `ADMIN_CIDRS`, not from a GitHub-hosted runner. This preserves restricted SSH access
@@ -67,12 +68,16 @@ command-line arguments.
 cp .oci-project.env.example .oci-project.env # first use only
 make deploy-test-check
 make deploy-test-api IMAGE_TAG=test-0.1.0-rc.1
+make deploy-test-web
 ```
 
-The script deploys the lightweight stack and verifies
-`http://<test-instance-public-ip>/health`. To roll back, rerun the same command with a
-previous immutable backend image tag. A self-hosted runner may reuse this script later;
-the current GitHub-hosted SSH deployment is intentionally unsupported.
+The API script deploys the lightweight stack and verifies
+`http://<test-instance-public-ip>/health`. `make deploy-test-web` builds the local
+`recycling-web` checkout with the backend's public URL, allows only the frontend origin
+through API CORS, deploys the static site to the frontend candidate, and verifies its
+public HTTP endpoint. To roll back the API, rerun its command with a previous immutable
+backend image tag. A self-hosted runner may reuse these scripts later; the current
+GitHub-hosted SSH deployment is intentionally unsupported.
 
 Use the initial local workflow only after filling a private `terraform.tfvars`:
 
