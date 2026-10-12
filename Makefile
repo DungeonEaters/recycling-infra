@@ -1,4 +1,4 @@
-.PHONY: up down logs test reset web mobile dev-api dev-web dev-mobile test-local oci-test-status oci-test-resources
+.PHONY: up down logs test reset web mobile dev-api dev-web dev-mobile test-local oci-test-status oci-test-resources deploy-test-check deploy-test-api
 
 up:
 	docker compose up -d --build
@@ -41,3 +41,10 @@ oci-test-status:
 
 oci-test-resources:
 	./scripts/inspect-oci-test-resources.sh
+
+deploy-test-check:
+	./scripts/deploy-test-api.sh --check
+
+deploy-test-api:
+	@test -n "$(IMAGE_TAG)" || (echo "Set IMAGE_TAG to an existing backend GHCR tag." >&2; exit 2)
+	./scripts/deploy-test-api.sh --image-tag "$(IMAGE_TAG)"

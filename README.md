@@ -50,6 +50,30 @@ an isolated test compartment and remote state bucket before production provision
 is intentionally separate because Terraform must initialize its backend before the
 production root can create resources.
 
+## Test application deployment
+
+The isolated test infrastructure uses a small AMD instance and is intentionally limited
+to PostgreSQL, the API and an HTTP-only Caddy proxy. It validates the provisioning and
+runtime path; it is not sized for the complete application stack.
+
+The test deployment is initiated from an administrator workstation already allowed by
+`ADMIN_CIDRS`, not from a GitHub-hosted runner. This preserves restricted SSH access
+and avoids opening port 22 to GitHub's dynamic runner ranges. The script discovers the
+running test instance through OCI, requires a verified local SSH host key, and prompts
+for a `read:packages` GHCR token without writing it to Terraform, repository files or
+command-line arguments.
+
+```bash
+cp .oci-project.env.example .oci-project.env # first use only
+make deploy-test-check
+make deploy-test-api IMAGE_TAG=test-0.1.0-rc.1
+```
+
+The script deploys the lightweight stack and verifies
+`http://<test-instance-public-ip>/health`. To roll back, rerun the same command with a
+previous immutable backend image tag. A self-hosted runner may reuse this script later;
+the current GitHub-hosted SSH deployment is intentionally unsupported.
+
 Use the initial local workflow only after filling a private `terraform.tfvars`:
 
 ```bash
@@ -83,11 +107,20 @@ Configure Environment variables:
 
 No `terraform destroy` workflow exists. Destruction is a separately reviewed break-glass procedure.
 
-## Deploy workflow
+## Production deployment automation
 
-`.github/workflows/deploy.yml` is manual only (`workflow_dispatch`). It takes an existing GHCR `image_tag` (produced by the `release.yml` workflow of `recycling-backend`/`recycling-web`/`recycling-mobile`, see [cicd-strategy.md](https://github.com/DungeonEaters/recycling-logistics-design/blob/main/docs/delivery/cicd-strategy.md) in the design repo), uploads `docker-compose.prod.yml`/`Caddyfile` over SSH and runs `docker compose pull`/`up -d` on the target VM. It never builds images itself.
+`.github/workflows/deploy.yml` defines the intended manual update of an existing GHCR
+`image_tag` (produced by the `release.yml` workflow of
+`recycling-backend`/`recycling-web`/`recycling-mobile`; see
+[cicd-strategy.md](https://github.com/DungeonEaters/recycling-logistics-design/blob/main/docs/delivery/cicd-strategy.md)).
+It does not build images or execute Terraform.
 
-Configure a GitHub Environment per target (`test`, `production`) with:
+Do not use that SSH workflow from GitHub-hosted runners while port 22 remains limited
+to `ADMIN_CIDRS`: it will time out by design. The supported test mechanism is the
+local script above. Production automation must invoke the same deployment logic from
+a dedicated self-hosted runner or another approved non-SSH channel.
+
+The future runner Environment per target (`test`, `production`) requires:
 
 **Secrets:**
 

@@ -97,11 +97,21 @@ compartment se diseña por entorno o producto, no como una cuenta OCI independie
 - Terraform `plan` y `apply` se ejecutan manualmente desde GitHub Actions; `apply`
   solo desde `main`, con confirmación explícita y aprobación del Environment
   `production`.
+- El ciclo se separa en tres capas: Terraform crea recursos OCI y state; cloud-init
+  prepara el host (Docker, Compose, UFW y acceso del usuario `ubuntu` al grupo
+  `docker`); un script de despliegue actualiza imágenes ya publicadas.
 - `main` requiere PR y revisión humana. No se permite modificar protección de rama para
   realizar un merge.
 - SSH usa una clave dedicada. La llave privada vive solo en GitHub Environment secrets;
   `admin_cidrs` nunca debe usar `0.0.0.0/0`.
-- El despliegue usa `deploy.yml` para descargar un tag existente de GHCR y actualizar
-  Compose. No construye imágenes ni ejecuta Terraform.
+- El primer despliegue de test se realiza desde una estación administrativa mediante
+  [`scripts/deploy-test-api.sh`](../../scripts/deploy-test-api.sh). Esto conserva SSH
+  restringido a `ADMIN_CIDRS`, transmite el token GHCR solo por stdin y valida
+  `/health` públicamente. El script no usa Terraform `remote-exec` ni escribe secretos
+  en state.
+- GitHub-hosted runners no acceden por SSH a la VM: sus rangos de IP son dinámicos y
+  no justifican abrir el puerto 22. La automatización posterior reutilizará el mismo
+  script desde un runner self-hosted aislado. OCI Run Command queda suspendido mientras
+  el agente no pueda ejecutar comandos de forma confiable.
 - Los valores concretos y el procedimiento de bootstrap están en
   [`oracle_admin_setup.md`](oracle_admin_setup.md).
