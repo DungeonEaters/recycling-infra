@@ -38,8 +38,8 @@ jobs:
       TF_VAR_is_flexible_shape: "false"
       TF_VAR_create_arm_candidate: "true"
       TF_VAR_arm_candidate_ubuntu_image_ocid: ${{ vars.OCI_UBUNTU_IMAGE_OCID }}
-      TF_VAR_arm_candidate_ocpus: "4"
-      TF_VAR_arm_candidate_memory_in_gbs: "24"
+      TF_VAR_arm_candidate_ocpus: "2"
+      TF_VAR_arm_candidate_memory_in_gbs: "12"
       TF_VAR_arm_candidate_boot_volume_size_in_gbs: "100"
       OCI_STATE_BUCKET: recycling-tfstate-test
       OCI_STATE_NAMESPACE: ${{ vars.OCI_STATE_NAMESPACE }}

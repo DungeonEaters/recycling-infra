@@ -91,7 +91,7 @@ variable "arm_candidate_ubuntu_image_ocid" {
 }
 variable "arm_candidate_ocpus" {
   type    = number
-  default = 4
+  default = 2
   validation {
     condition     = var.arm_candidate_ocpus >= 1 && var.arm_candidate_ocpus <= 4
     error_message = "Always Free supports 1-4 A1 OCPUs."
@@ -99,7 +99,7 @@ variable "arm_candidate_ocpus" {
 }
 variable "arm_candidate_memory_in_gbs" {
   type    = number
-  default = 24
+  default = 12
   validation {
     condition     = var.arm_candidate_memory_in_gbs >= 6 && var.arm_candidate_memory_in_gbs <= 24
     error_message = "Always Free supports 6-24 GB A1 memory."
