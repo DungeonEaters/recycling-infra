@@ -37,18 +37,21 @@ printf '\nVCNs\n'
 "${oci_cmd[@]}" network vcn list \
   --compartment-id "$compartment_ocid" \
   --all \
+  --query 'data[].{name:"display-name",cidr:"cidr-block",state:"lifecycle-state",id:id}' \
   --output table
 
 printf '\nSubnets\n'
 "${oci_cmd[@]}" network subnet list \
   --compartment-id "$compartment_ocid" \
   --all \
+  --query 'data[].{name:"display-name",cidr:"cidr-block",state:"lifecycle-state",id:id}' \
   --output table
 
 printf '\nInstances\n'
 "${oci_cmd[@]}" compute instance list \
   --compartment-id "$compartment_ocid" \
   --all \
+  --query 'data[].{name:"display-name",shape:shape,state:"lifecycle-state",id:id}' \
   --output table
 
 printf '\nInstance VNIC addresses\n'
