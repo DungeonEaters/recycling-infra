@@ -21,3 +21,19 @@ initialize the same remote backend first.
 
 This module intentionally does not create API signing keys or Customer Secret Keys.
 Private credential material must never enter Terraform configuration or state.
+
+## Inspecting the test prerequisites locally
+
+The repository includes a non-secret local configuration template and an inspection
+command. It uses the OCI CLI profile already configured on the workstation; credentials
+remain in the OCI CLI configuration and are not copied to the repository.
+
+```bash
+cp .oci-project.env.example .oci-project.env
+make oci-test-status
+```
+
+Run the commands from the repository root. The local `.oci-project.env` file is ignored
+by Git and contains only the profile and resource names. The command checks the
+compartment, the bucket's access/versioning settings, and the remote Terraform state
+objects. It performs no Terraform or OCI mutations.
