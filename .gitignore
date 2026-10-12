@@ -6,3 +6,4 @@
 *.tfvars
 !terraform.tfvars.example
 crash.log
+environments/bootstrap/bootstrap-state-backend.tf

@@ -68,9 +68,16 @@ jobs:
           test -n "$TF_VAR_region"
           test -n "$OCI_STATE_NAMESPACE"
       - name: Initialize local bootstrap state
-        run: terraform init -backend=false
+        run: terraform init
       - name: Apply ephemeral prerequisites
         run: terraform apply -auto-approve
+      - name: Configure OCI Object Storage backend
+        run: |
+          cat > bootstrap-state-backend.tf <<'EOF'
+          terraform {
+            backend "s3" {}
+          }
+          EOF
       - name: Migrate bootstrap state to OCI Object Storage
         run: |
           terraform init -migrate-state -input=false \

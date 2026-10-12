@@ -14,9 +14,10 @@ It creates only ephemeral test resources:
 `[bootstrap-apply]`. This guard prevents normal documentation or code pushes from
 creating OCI resources.
 
-The first apply initializes Terraform with local state, creates the bucket, and then
-migrates that state to OCI Object Storage in the same job. Do not run `destroy` from a
-different local state: initialize the same remote backend first.
+The first apply uses Terraform's default local backend, creates the bucket, and then
+the workflow writes a temporary S3 backend configuration before migrating state to OCI
+Object Storage in the same job. Do not run `destroy` from a different local state:
+initialize the same remote backend first.
 
 This module intentionally does not create API signing keys or Customer Secret Keys.
 Private credential material must never enter Terraform configuration or state.
