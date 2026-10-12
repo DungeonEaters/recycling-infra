@@ -34,6 +34,11 @@ variable "shape" {
   type    = string
   default = "VM.Standard.A1.Flex"
 }
+variable "is_flexible_shape" {
+  type        = bool
+  default     = true
+  description = "Whether the selected compute shape accepts OCPU and memory configuration."
+}
 variable "ocpus" {
   type    = number
   default = 1
