@@ -1,6 +1,9 @@
 name: Deploy test API
 
 on:
+  push:
+    branches:
+      - infra/test-bootstrap
   workflow_dispatch:
     inputs:
       image_tag:
@@ -11,21 +14,28 @@ on:
 permissions:
   contents: read
 
+env:
+  IMAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.image_tag || 'test-0.1.0-rc.1' }}
+
 concurrency:
   group: deploy-test
   cancel-in-progress: false
 
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/infra/test-bootstrap'
+    if: >-
+      (github.event_name == 'push' &&
+      contains(github.event.head_commit.message, '[deploy-test]')) ||
+      (github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/infra/test-bootstrap')
     runs-on: ubuntu-latest
     environment: deployment-test
     steps:
       - uses: actions/checkout@v4
       - name: Validate image tag
         run: |
-          test "${{ inputs.image_tag }}" = "$(printf '%s' '${{ inputs.image_tag }}' | tr -cd 'A-Za-z0-9._-')"
-          test -n "${{ inputs.image_tag }}"
+          test "$IMAGE_TAG" = "$(printf '%s' "$IMAGE_TAG" | tr -cd 'A-Za-z0-9._-')"
+          test -n "$IMAGE_TAG"
       - uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -52,7 +62,7 @@ jobs:
           GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
           POSTGRES_PASSWORD: ${{ secrets.TEST_POSTGRES_PASSWORD }}
           JWT_SECRET: ${{ secrets.TEST_JWT_SECRET }}
-          IMAGE_TAG: ${{ inputs.image_tag }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
           # shellcheck disable=SC2029
           ssh "$SERVER_USER@$SERVER_HOST" \
