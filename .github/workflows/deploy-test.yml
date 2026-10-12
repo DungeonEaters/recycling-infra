@@ -1,0 +1,77 @@
+name: Deploy test API
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Existing backend GHCR tag
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-test
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/infra/test-bootstrap'
+    runs-on: ubuntu-latest
+    environment: deployment-test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate image tag
+        run: |
+          test "${{ inputs.image_tag }}" = "$(printf '%s' '${{ inputs.image_tag }}' | tr -cd 'A-Za-z0-9._-')"
+          test -n "${{ inputs.image_tag }}"
+      - uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Trust test host key
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Upload test manifests
+        env:
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        run: |
+          # shellcheck disable=SC2029
+          ssh "$SERVER_USER@$SERVER_HOST" "mkdir -p '$DEPLOY_PATH'"
+          scp docker-compose.test.yml Caddyfile.test "$SERVER_USER@$SERVER_HOST:$DEPLOY_PATH/"
+      - name: Deploy test API
+        env:
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          POSTGRES_PASSWORD: ${{ secrets.TEST_POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.TEST_JWT_SECRET }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          # shellcheck disable=SC2029
+          ssh "$SERVER_USER@$SERVER_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' SERVER_HOST='$SERVER_HOST' GHCR_USERNAME='$GHCR_USERNAME' GHCR_PULL_TOKEN='$GHCR_PULL_TOKEN' POSTGRES_PASSWORD='$POSTGRES_PASSWORD' JWT_SECRET='$JWT_SECRET' IMAGE_TAG='$IMAGE_TAG' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$DEPLOY_PATH"
+          umask 077
+          cat > .env <<EOF
+          API_IMAGE=ghcr.io/dungeoneaters/recycling-backend
+          IMAGE_TAG=$IMAGE_TAG
+          POSTGRES_USER=recycling
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          POSTGRES_DB=recycling
+          JWT_SECRET=$JWT_SECRET
+          CORS_ORIGINS=http://$SERVER_HOST
+          EOF
+          printf '%s' "$GHCR_PULL_TOKEN" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
+          docker compose --env-file .env -f docker-compose.test.yml pull
+          docker compose --env-file .env -f docker-compose.test.yml up -d --remove-orphans
+          curl --fail --silent --show-error http://localhost/health
+          docker compose --env-file .env -f docker-compose.test.yml ps
+          REMOTE
