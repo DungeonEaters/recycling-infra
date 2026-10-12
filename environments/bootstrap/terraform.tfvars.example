@@ -1,0 +1,5 @@
+region                   = "sa-santiago-1"
+parent_compartment_ocid  = "ocid1.tenancy.oc1..replace-me"
+object_storage_namespace = "replace-me"
+compartment_name         = "cmp-reciclaje-test"
+state_bucket_name        = "recycling-tfstate-test"

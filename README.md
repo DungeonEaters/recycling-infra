@@ -45,6 +45,11 @@ Architecture and manual OCI bootstrap details:
 - [Production infrastructure design](docs/architecture/infrastructure_design.md)
 - [Oracle administrator setup](docs/architecture/oracle_admin_setup.md)
 
+The prerequisite test root in [environments/bootstrap/](environments/bootstrap/) creates
+an isolated test compartment and remote state bucket before production provisioning. It
+is intentionally separate because Terraform must initialize its backend before the
+production root can create resources.
+
 Use the initial local workflow only after filling a private `terraform.tfvars`:
 
 ```bash
