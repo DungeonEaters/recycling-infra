@@ -71,3 +71,45 @@ variable "subnet_cidr" {
   type    = string
   default = "10.20.1.0/24"
 }
+variable "create_arm_candidate" {
+  type        = bool
+  default     = false
+  description = "Create a separate ARM test candidate without replacing the active AMD test instance."
+}
+variable "arm_candidate_display_name" {
+  type    = string
+  default = "recycling-logistics-arm-test"
+}
+variable "arm_candidate_ubuntu_image_ocid" {
+  type        = string
+  default     = ""
+  description = "Ubuntu ARM64 image OCID used only when create_arm_candidate is true."
+  validation {
+    condition     = !var.create_arm_candidate || length(var.arm_candidate_ubuntu_image_ocid) > 0
+    error_message = "arm_candidate_ubuntu_image_ocid is required when create_arm_candidate is true."
+  }
+}
+variable "arm_candidate_ocpus" {
+  type    = number
+  default = 4
+  validation {
+    condition     = var.arm_candidate_ocpus >= 1 && var.arm_candidate_ocpus <= 4
+    error_message = "Always Free supports 1-4 A1 OCPUs."
+  }
+}
+variable "arm_candidate_memory_in_gbs" {
+  type    = number
+  default = 24
+  validation {
+    condition     = var.arm_candidate_memory_in_gbs >= 6 && var.arm_candidate_memory_in_gbs <= 24
+    error_message = "Always Free supports 6-24 GB A1 memory."
+  }
+}
+variable "arm_candidate_boot_volume_size_in_gbs" {
+  type    = number
+  default = 100
+  validation {
+    condition     = var.arm_candidate_boot_volume_size_in_gbs >= 50
+    error_message = "Boot volume size must be at least 50 GB."
+  }
+}
