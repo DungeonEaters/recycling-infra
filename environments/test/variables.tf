@@ -113,3 +113,29 @@ variable "arm_candidate_boot_volume_size_in_gbs" {
     error_message = "Boot volume size must be at least 50 GB."
   }
 }
+variable "create_frontend_candidate" {
+  type        = bool
+  default     = false
+  description = "Create a separate AMD frontend host without changing the API and database test instance."
+}
+variable "frontend_candidate_display_name" {
+  type    = string
+  default = "recycling-logistics-frontend-test"
+}
+variable "frontend_candidate_ubuntu_image_ocid" {
+  type        = string
+  default     = ""
+  description = "Ubuntu AMD64 image OCID used only when create_frontend_candidate is true."
+  validation {
+    condition     = !var.create_frontend_candidate || length(var.frontend_candidate_ubuntu_image_ocid) > 0
+    error_message = "frontend_candidate_ubuntu_image_ocid is required when create_frontend_candidate is true."
+  }
+}
+variable "frontend_candidate_boot_volume_size_in_gbs" {
+  type    = number
+  default = 50
+  validation {
+    condition     = var.frontend_candidate_boot_volume_size_in_gbs >= 50
+    error_message = "Boot volume size must be at least 50 GB."
+  }
+}

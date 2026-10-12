@@ -138,3 +138,29 @@ resource "oci_core_instance" "arm_candidate" {
     user_data           = base64encode(file("${path.module}/cloud-init.yaml"))
   }
 }
+
+resource "oci_core_instance" "frontend_candidate" {
+  count = var.create_frontend_candidate ? 1 : 0
+
+  compartment_id      = var.compartment_ocid
+  availability_domain = var.availability_domain
+  display_name        = var.frontend_candidate_display_name
+  shape               = "VM.Standard.E2.1.Micro"
+
+  create_vnic_details {
+    subnet_id        = oci_core_subnet.public.id
+    assign_public_ip = true
+    display_name     = "${var.frontend_candidate_display_name}-vnic"
+  }
+
+  source_details {
+    source_type             = "image"
+    source_id               = var.frontend_candidate_ubuntu_image_ocid
+    boot_volume_size_in_gbs = var.frontend_candidate_boot_volume_size_in_gbs
+  }
+
+  metadata = {
+    ssh_authorized_keys = var.ssh_public_key
+    user_data           = base64encode(file("${path.module}/cloud-init.yaml"))
+  }
+}
