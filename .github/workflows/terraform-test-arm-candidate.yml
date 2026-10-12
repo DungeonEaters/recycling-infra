@@ -73,8 +73,8 @@ jobs:
             -backend-config="skip_metadata_api_check=true" \
             -backend-config="skip_s3_checksum=true" \
             -backend-config="use_path_style=true"
-      - name: Plan ARM candidate
-        run: terraform plan -out=tfplan
+      - name: Plan ARM candidate only
+        run: terraform plan -target=oci_core_instance.arm_candidate -out=tfplan
       - name: Apply ARM candidate
         run: terraform apply -auto-approve tfplan
       - name: Output candidate address
