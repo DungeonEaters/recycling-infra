@@ -13,7 +13,7 @@ runcmd:
   - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
   - systemctl enable --now docker
   - usermod -aG docker ubuntu
-  - install -d -m 0700 /opt/recycling-logistics/test /opt/recycling-logistics/production
+  - install -d -o ubuntu -g ubuntu -m 0700 /opt/recycling-logistics/test /opt/recycling-logistics/production
   - ufw allow OpenSSH
   - ufw allow 80/tcp
   - ufw allow 443/tcp

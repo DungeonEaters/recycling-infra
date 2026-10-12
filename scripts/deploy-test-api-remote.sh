@@ -50,6 +50,7 @@ command -v docker >/dev/null || {
 
 docker compose version >/dev/null
 test -d "$deploy_path"
+test -w "$deploy_path"
 
 if "$check_only"; then
   printf 'Deployment host preflight passed for %s.\n' "$deploy_path"
