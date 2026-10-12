@@ -81,7 +81,7 @@ jobs:
       - name: Migrate bootstrap state to OCI Object Storage
         run: |
           for attempt in $(seq 1 12); do
-            if terraform init -migrate-state -input=false \
+            if terraform init -migrate-state -force-copy -input=false \
               -backend-config="bucket=$OCI_STATE_BUCKET" \
               -backend-config="key=bootstrap-test/terraform.tfstate" \
               -backend-config="region=$OCI_REGION" \
@@ -150,7 +150,7 @@ jobs:
           EOF
       - name: Migrate recovered state to OCI Object Storage
         run: |
-          terraform init -migrate-state -input=false \
+          terraform init -migrate-state -force-copy -input=false \
             -backend-config="bucket=$OCI_STATE_BUCKET" \
             -backend-config="key=bootstrap-test/terraform.tfstate" \
             -backend-config="region=$OCI_REGION" \
