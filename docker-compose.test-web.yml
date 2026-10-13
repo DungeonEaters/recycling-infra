@@ -1,0 +1,9 @@
+services:
+  web:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile.test-web:/etc/caddy/Caddyfile:ro
+      - ./site:/srv:ro

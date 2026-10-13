@@ -1,4 +1,4 @@
-.PHONY: up down logs test reset web mobile dev-api dev-web dev-mobile test-local
+.PHONY: up down logs test reset web mobile dev-api dev-web dev-mobile test-local oci-test-status oci-test-resources deploy-test-check deploy-test-api deploy-test-web retry-test-a1-candidate
 
 up:
 	docker compose up -d --build
@@ -35,3 +35,22 @@ test-local:
 	cd ../recycling-backend && DATABASE_URL=sqlite+pysqlite:///:memory: .venv/bin/pytest -q
 	cd ../recycling-web && npm run build
 	cd ../recycling-mobile && npm test && npm run build
+
+oci-test-status:
+	./scripts/inspect-oci-test.sh
+
+oci-test-resources:
+	./scripts/inspect-oci-test-resources.sh
+
+deploy-test-check:
+	./scripts/deploy-test-api.sh --check
+
+deploy-test-api:
+	@test -n "$(IMAGE_TAG)" || (echo "Set IMAGE_TAG to an existing backend GHCR tag." >&2; exit 2)
+	./scripts/deploy-test-api.sh --image-tag "$(IMAGE_TAG)"
+
+deploy-test-web:
+	./scripts/deploy-test-web.sh
+
+retry-test-a1-candidate:
+	./scripts/retry-oci-a1-candidate.sh

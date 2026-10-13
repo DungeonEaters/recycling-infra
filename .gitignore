@@ -1,8 +1,10 @@
 .env
 .env.production
+.oci-project.env
 .terraform/
 *.tfstate
 *.tfstate.*
 *.tfvars
 !terraform.tfvars.example
 crash.log
+environments/bootstrap/bootstrap-state-backend.tf

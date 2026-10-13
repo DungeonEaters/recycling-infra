@@ -45,6 +45,56 @@ Architecture and manual OCI bootstrap details:
 - [Production infrastructure design](docs/architecture/infrastructure_design.md)
 - [Oracle administrator setup](docs/architecture/oracle_admin_setup.md)
 
+The prerequisite test root in [environments/bootstrap/](environments/bootstrap/) creates
+an isolated test compartment and remote state bucket before production provisioning. It
+is intentionally separate because Terraform must initialize its backend before the
+production root can create resources.
+
+## Test application deployment
+
+The isolated test infrastructure splits its limited Always Free capacity between two AMD
+instances: PostgreSQL, the API and Caddy run on the backend host; Caddy serves the
+compiled web panel from the frontend host. This validates the provisioning and runtime
+path; it is not sized for the complete application stack.
+
+The test deployment is initiated from an administrator workstation already allowed by
+`ADMIN_CIDRS`, not from a GitHub-hosted runner. This preserves restricted SSH access
+and avoids opening port 22 to GitHub's dynamic runner ranges. The script discovers the
+running test instance through OCI, requires a verified local SSH host key, and prompts
+for a `read:packages` GHCR token without writing it to Terraform, repository files or
+command-line arguments.
+
+```bash
+cp .oci-project.env.example .oci-project.env # first use only
+make deploy-test-check
+make deploy-test-api IMAGE_TAG=test-0.1.0-rc.1
+make deploy-test-web
+```
+
+The API script deploys the lightweight stack and verifies
+`http://<test-instance-public-ip>/health`. `make deploy-test-web` builds the local
+`recycling-web` checkout with the backend's public URL, allows only the frontend origin
+through API CORS, deploys the static site to the frontend candidate, and verifies its
+public HTTP endpoint. To roll back the API, rerun its command with a previous immutable
+backend image tag. A self-hosted runner may reuse these scripts later; the current
+GitHub-hosted SSH deployment is intentionally unsupported.
+
+### Retrying OCI Ampere A1 capacity
+
+OCI may temporarily have no free A1 host capacity in the home region. The bounded
+local CLI retry script requests the Always Free A1 maximum, one `VM.Standard.A1.Flex`
+instance with 2 OCPUs and 12 GB RAM, and retries only `Out of host capacity` failures:
+
+```bash
+# Set OCI_AVAILABILITY_DOMAIN and ARM_CANDIDATE_UBUNTU_IMAGE_OCID in .oci-project.env.
+make retry-test-a1-candidate
+```
+
+The default is 24 attempts, 15 minutes apart. It never retries quota, authentication,
+network, or configuration failures. It creates the instance directly through OCI CLI
+outside Terraform state and prints the required `terraform import` command after
+success; run that import before making any further Terraform changes.
+
 Use the initial local workflow only after filling a private `terraform.tfvars`:
 
 ```bash
@@ -78,11 +128,20 @@ Configure Environment variables:
 
 No `terraform destroy` workflow exists. Destruction is a separately reviewed break-glass procedure.
 
-## Deploy workflow
+## Production deployment automation
 
-`.github/workflows/deploy.yml` is manual only (`workflow_dispatch`). It takes an existing GHCR `image_tag` (produced by the `release.yml` workflow of `recycling-backend`/`recycling-web`/`recycling-mobile`, see [cicd-strategy.md](https://github.com/DungeonEaters/recycling-logistics-design/blob/main/docs/delivery/cicd-strategy.md) in the design repo), uploads `docker-compose.prod.yml`/`Caddyfile` over SSH and runs `docker compose pull`/`up -d` on the target VM. It never builds images itself.
+`.github/workflows/deploy.yml` defines the intended manual update of an existing GHCR
+`image_tag` (produced by the `release.yml` workflow of
+`recycling-backend`/`recycling-web`/`recycling-mobile`; see
+[cicd-strategy.md](https://github.com/DungeonEaters/recycling-logistics-design/blob/main/docs/delivery/cicd-strategy.md)).
+It does not build images or execute Terraform.
 
-Configure a GitHub Environment per target (`test`, `production`) with:
+Do not use that SSH workflow from GitHub-hosted runners while port 22 remains limited
+to `ADMIN_CIDRS`: it will time out by design. The supported test mechanism is the
+local script above. Production automation must invoke the same deployment logic from
+a dedicated self-hosted runner or another approved non-SSH channel.
+
+The future runner Environment per target (`test`, `production`) requires:
 
 **Secrets:**
 

@@ -61,8 +61,10 @@ ssh-keygen -t ed25519 -C "deploy@recycling-logistics" \
   `DEPLOY_SSH_PUBLIC_KEY` (GitHub Environment variable). Terraform lo instala en la
   instancia.
 - El contenido completo de `~/.ssh/recycling-logistics-deploy` será
-  `SSH_PRIVATE_KEY` (GitHub Environment secret). El workflow `deploy.yml` lo usa para
-  acceder a la VM después del provisioning.
+  `SSH_PRIVATE_KEY` del Environment de producción, usado por `deploy.yml`. La misma
+  clave se conserva en la estación administrativa para el despliegue local de test
+  mediante `scripts/deploy-test-api.sh`; un futuro runner self-hosted debe usar una
+  credencial distinta y limitada.
 - No reutilices una llave SSH personal ni compartas el archivo privado.
 
 ## 5. Bootstrap del estado remoto de Terraform
@@ -107,9 +109,11 @@ El Environment ya debe exigir aprobación y limitar despliegues a `main`.
 | `OCI_STATE_BUCKET` | Nombre del bucket privado de state. |
 | `OCI_STATE_NAMESPACE` | Namespace de Object Storage. |
 
-Después del primer apply, agrega también `SERVER_HOST` (IP pública de la VM),
-`SERVER_USER` (`ubuntu`), `DEPLOY_PATH`, `SSH_KNOWN_HOSTS`, `GHCR_USERNAME` y
-`GHCR_PULL_TOKEN` según el [README](../../README.md#deploy-workflow).
+Después del primer apply, registra una host key verificada para la IP pública de la VM
+en la estación administrativa. Para el deploy local de test, el PAT de GHCR con
+`read:packages` se introduce interactivamente cuando
+`scripts/deploy-test-api.sh --image-tag <tag>` lo solicita; no se guarda en state,
+archivos de proyecto ni argumentos de comandos.
 
 ## 7. Verificación antes de aplicar
 
