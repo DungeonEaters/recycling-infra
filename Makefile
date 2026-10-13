@@ -1,4 +1,4 @@
-.PHONY: up down logs test reset web mobile dev-api dev-web dev-mobile test-local oci-test-status oci-test-resources deploy-test-check deploy-test-api deploy-test-web
+.PHONY: up down logs test reset web mobile dev-api dev-web dev-mobile test-local oci-test-status oci-test-resources deploy-test-check deploy-test-api deploy-test-web retry-test-a1-candidate
 
 up:
 	docker compose up -d --build
@@ -51,3 +51,6 @@ deploy-test-api:
 
 deploy-test-web:
 	./scripts/deploy-test-web.sh
+
+retry-test-a1-candidate:
+	./scripts/retry-oci-a1-candidate.sh

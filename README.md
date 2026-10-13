@@ -79,6 +79,22 @@ public HTTP endpoint. To roll back the API, rerun its command with a previous im
 backend image tag. A self-hosted runner may reuse these scripts later; the current
 GitHub-hosted SSH deployment is intentionally unsupported.
 
+### Retrying OCI Ampere A1 capacity
+
+OCI may temporarily have no free A1 host capacity in the home region. The bounded
+local CLI retry script requests the Always Free A1 maximum, one `VM.Standard.A1.Flex`
+instance with 2 OCPUs and 12 GB RAM, and retries only `Out of host capacity` failures:
+
+```bash
+# Set OCI_AVAILABILITY_DOMAIN and ARM_CANDIDATE_UBUNTU_IMAGE_OCID in .oci-project.env.
+make retry-test-a1-candidate
+```
+
+The default is 24 attempts, 15 minutes apart. It never retries quota, authentication,
+network, or configuration failures. It creates the instance directly through OCI CLI
+outside Terraform state and prints the required `terraform import` command after
+success; run that import before making any further Terraform changes.
+
 Use the initial local workflow only after filling a private `terraform.tfvars`:
 
 ```bash
